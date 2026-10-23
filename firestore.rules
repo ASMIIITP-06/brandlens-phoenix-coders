@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all for any unmapped paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection testing
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Workspace scoping
+    match /workspaces/{workspaceId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(workspaceId) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() <= 100;
+      allow update: if isSignedIn();
+      allow delete: if false;
+
+      // Workspace members
+      match /members/{memberId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn() && (
+          memberId == request.auth.uid ||
+          request.resource.data.uid == request.auth.uid
+        );
+        allow delete: if isSignedIn();
+      }
+
+      // Governance Library: Approved Facts, Terminology, Voice Guidance
+      match /knowledgeItems/{itemId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn() &&
+          isValidId(itemId) &&
+          request.resource.data.title is string &&
+          request.resource.data.title.size() <= 200 &&
+          request.resource.data.type in ['fact', 'glossary', 'tone', 'guideline', 'asset'];
+        allow delete: if isSignedIn();
+      }
+
+      // Content Reviews & Submissions
+      match /reviews/{reviewId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() &&
+          isValidId(reviewId) &&
+          request.resource.data.title is string &&
+          request.resource.data.title.size() <= 200;
+        allow update: if isSignedIn();
+        allow delete: if isSignedIn();
+
+        // Evidence-linked Findings
+        match /findings/{findingId} {
+          allow read: if isSignedIn();
+          allow create: if isSignedIn() && isValidId(findingId);
+          allow update: if isSignedIn() && (
+            // Mandatory non-empty reason when dismissing a finding
+            (request.resource.data.status != 'dismissed') ||
+            (request.resource.data.status == 'dismissed' &&
+             request.resource.data.dismissReason is string &&
+             request.resource.data.dismissReason.size() > 0)
+          );
+          allow delete: if isSignedIn();
+        }
+
+        // Immutable Version Snapshots
+        match /versions/{versionId} {
+          allow read: if isSignedIn();
+          allow create: if isSignedIn() && isValidId(versionId);
+          allow update, delete: if false; // Versions are strictly immutable
+        }
+
+        // Review Comments & Annotations
+        match /comments/{commentId} {
+          allow read: if isSignedIn();
+          allow create: if isSignedIn() &&
+            request.resource.data.body is string &&
+            request.resource.data.body.size() <= 2000;
+          allow update, delete: if isSignedIn();
+        }
+      }
+
+      // Append-Only Immutable Audit Trail
+      match /auditEvents/{eventId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() &&
+          isValidId(eventId) &&
+          request.resource.data.action is string &&
+          request.resource.data.action.size() <= 120;
+        allow update, delete: if false; // Strict audit immutability
+      }
+    }
+  }
+}

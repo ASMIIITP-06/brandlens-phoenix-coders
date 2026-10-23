@@ -1,0 +1,187 @@
+{
+  "entities": {
+    "Workspace": {
+      "title": "Workspace",
+      "description": "Top-level governance workspace for a team or organization",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "settings": { "type": "object" }
+      },
+      "required": ["name", "createdBy", "createdAt"]
+    },
+    "Member": {
+      "title": "Member",
+      "description": "Workspace member with role and profile info",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["creator", "brand_manager", "specialist_reviewer", "publish_owner", "admin"] },
+        "displayName": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 160 },
+        "status": { "type": "string", "enum": ["active", "invited", "suspended"] },
+        "joinedAt": { "type": "string" }
+      },
+      "required": ["uid", "role", "displayName"]
+    },
+    "KnowledgeItem": {
+      "title": "KnowledgeItem",
+      "description": "Approved brand knowledge: facts, glossary terms, tone rules, guidelines",
+      "type": "object",
+      "properties": {
+        "workspaceId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["fact", "glossary", "tone", "guideline", "asset"] },
+        "title": { "type": "string", "maxLength": 200 },
+        "body": { "type": "string", "maxLength": 4000 },
+        "preferredTerm": { "type": "string", "maxLength": 100 },
+        "prohibitedTerms": { "type": "array" },
+        "sourceName": { "type": "string", "maxLength": 160 },
+        "sourceUrl": { "type": "string", "maxLength": 500 },
+        "sourceText": { "type": "string", "maxLength": 4000 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "validFrom": { "type": "string" },
+        "expiresAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "expiring", "expired", "archived"] },
+        "version": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["workspaceId", "type", "title", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A draft review session in BrandLens",
+      "type": "object",
+      "properties": {
+        "workspaceId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "channel": { "type": "string", "enum": ["website", "social", "email", "paid_campaign", "product_page", "other"] },
+        "status": { "type": "string", "enum": ["draft", "in_review", "changes_requested", "approved", "published"] },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "assignedTo": { "type": "string", "maxLength": 128 },
+        "originalText": { "type": "string", "maxLength": 50000 },
+        "currentText": { "type": "string", "maxLength": 50000 },
+        "contentVersion": { "type": "number" },
+        "riskLevel": { "type": "string", "enum": ["low", "medium", "high"] },
+        "fileMetadata": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["workspaceId", "title", "status", "createdBy", "originalText", "currentText"]
+    },
+    "Finding": {
+      "title": "Finding",
+      "description": "An evidence-linked preflight governance finding",
+      "type": "object",
+      "properties": {
+        "reviewId": { "type": "string", "maxLength": 128 },
+        "workspaceId": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "enum": ["Tone & Voice", "Terminology", "Facts & Freshness", "Promotional Claims", "Visual Consistency", "Accessibility"] },
+        "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+        "excerpt": { "type": "string", "maxLength": 500 },
+        "startOffset": { "type": "number" },
+        "endOffset": { "type": "number" },
+        "ruleId": { "type": "string", "maxLength": 128 },
+        "rationale": { "type": "string", "maxLength": 1000 },
+        "evidenceStatus": { "type": "string", "enum": ["supported", "unsupported", "expired_source", "conflict"] },
+        "evidenceIds": { "type": "array" },
+        "evidenceSourceName": { "type": "string", "maxLength": 200 },
+        "evidenceSourceText": { "type": "string", "maxLength": 2000 },
+        "suggestedRevision": { "type": "string", "maxLength": 2000 },
+        "confidence": { "type": "number" },
+        "status": { "type": "string", "enum": ["open", "accepted", "edited", "dismissed", "resolved"] },
+        "dismissReason": { "type": "string", "maxLength": 500 },
+        "assignedTo": { "type": "string", "maxLength": 128 },
+        "updatedBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["reviewId", "category", "severity", "excerpt", "rationale", "evidenceStatus", "status"]
+    },
+    "ReviewVersion": {
+      "title": "ReviewVersion",
+      "description": "Historical snapshot of a draft after changes",
+      "type": "object",
+      "properties": {
+        "reviewId": { "type": "string", "maxLength": 128 },
+        "versionNumber": { "type": "number" },
+        "text": { "type": "string", "maxLength": 50000 },
+        "changeSummary": { "type": "string", "maxLength": 500 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "basedOnVersion": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["reviewId", "versionNumber", "text", "createdBy", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Review discussion comment or finding comment",
+      "type": "object",
+      "properties": {
+        "reviewId": { "type": "string", "maxLength": 128 },
+        "authorUid": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 120 },
+        "body": { "type": "string", "maxLength": 2000 },
+        "linkedFindingId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["reviewId", "authorUid", "body", "createdAt"]
+    },
+    "AuditEvent": {
+      "title": "AuditEvent",
+      "description": "Immutable append-only governance audit log entry",
+      "type": "object",
+      "properties": {
+        "workspaceId": { "type": "string", "maxLength": 128 },
+        "reviewId": { "type": "string", "maxLength": 128 },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 120 },
+        "actorRole": { "type": "string", "maxLength": 60 },
+        "action": { "type": "string", "maxLength": 80 },
+        "versionId": { "type": "number" },
+        "oldStatus": { "type": "string", "maxLength": 40 },
+        "newStatus": { "type": "string", "maxLength": 40 },
+        "reason": { "type": "string", "maxLength": 500 },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["workspaceId", "actorUid", "action", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/workspaces/{workspaceId}": {
+      "schema": { "$ref": "#/entities/Workspace" },
+      "description": "Workspace configuration and root boundary"
+    },
+    "/workspaces/{workspaceId}/members/{memberId}": {
+      "schema": { "$ref": "#/entities/Member" },
+      "description": "Workspace member profiles and roles"
+    },
+    "/workspaces/{workspaceId}/knowledgeItems/{itemId}": {
+      "schema": { "$ref": "#/entities/KnowledgeItem" },
+      "description": "Approved brand knowledge: facts, glossary, tone, guidelines"
+    },
+    "/workspaces/{workspaceId}/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Draft reviews and content quality gates"
+    },
+    "/workspaces/{workspaceId}/reviews/{reviewId}/findings/{findingId}": {
+      "schema": { "$ref": "#/entities/Finding" },
+      "description": "Evidence-linked findings for a review"
+    },
+    "/workspaces/{workspaceId}/reviews/{reviewId}/versions/{versionId}": {
+      "schema": { "$ref": "#/entities/ReviewVersion" },
+      "description": "Draft revision history snapshots"
+    },
+    "/workspaces/{workspaceId}/reviews/{reviewId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Review discussion threads and finding annotations"
+    },
+    "/workspaces/{workspaceId}/auditEvents/{eventId}": {
+      "schema": { "$ref": "#/entities/AuditEvent" },
+      "description": "Append-only immutable governance audit trail"
+    }
+  }
+}

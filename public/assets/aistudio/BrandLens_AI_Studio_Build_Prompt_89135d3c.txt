@@ -1,0 +1,142 @@
+BRANDLENS — ROUND 2 FUNCTIONAL MVP BUILD PROMPT
+Paste this into Google AI Studio > Build mode. Also attach the supplied BrandLens reference-slide PNG as a visual design reference.
+
+ROLE AND GOAL
+Act as a senior full-stack product engineer and product designer. Build a working, judge-ready web app called BrandLens: “The evidence-first brand governance copilot.” This is Phoenix Coders’ Round 2 build based on the attached BrandLens Round 1 Concept Plan. Do not build a generic AI writing app or a marketing landing page. Build the actual logged-in product workspace.
+
+CORE PRODUCT PROMISE
+Catch off-brand content before it goes live. Explain every flag, suggest a better version, and keep people in control. BrandLens is a pre-publication quality gate for brand, facts, terminology, promotional claims and accessibility. It recommends; authorised humans own claim approval, exceptions and the final publishing decision. Never auto-publish.
+
+IMPORTANT SCOPE
+Round 2 must prove one end-to-end journey: add approved knowledge → submit a draft or supported document → run checks → inspect evidence-linked findings → accept/edit/dismiss suggestions → comment/assign/request changes → authorised human approval → see immutable-style audit history → review basic issue trends. Make this narrow flow genuinely functional before adding advanced features. Use a clearly labelled sample/demo workspace and a small labelled test set, but do not present sample results or proposed targets as real measurements.
+
+TECH STACK / BACKEND
+- Build a responsive full-stack web app using Next.js App Router + React + TypeScript. Use Tailwind CSS or clean component CSS.
+- Use Firebase Authentication for sign-in. Prefer Google sign-in; if it is not available in the generated project, implement email/password and explain the setup. Do not use mock authentication in the real connected app.
+- Use Cloud Firestore for persistent application data. Explicitly create/describe collections and generate secure Firestore Security Rules.
+- Use Firebase Storage for uploaded files only if it can be provisioned and secured. If Storage cannot be enabled automatically, tell me the exact manual Console steps and keep unsupported uploads from appearing successful.
+- Use server-side Next.js route handlers or server actions for privileged workflow transitions, file parsing and any AI calls. Verify the Firebase ID token and workspace role on every privileged server request. Never trust a role supplied by the browser.
+- Keep Gemini/other model keys in server-side environment secrets only; never put private API keys or service-account credentials in client code. If no AI key has been configured, the app must still run with transparent deterministic checks and clearly label the engine as “Rules-only mode”.
+- Build an implementable Firebase-backed product, not localStorage-only mock data. If Firebase provisioning cannot happen automatically, identify exactly what remains and provide manual setup steps. Do not claim persistence works until tested against Firestore.
+- Add Firebase App Check where supported and sensible. Do not weaken security rules to make the demo pass.
+
+VISUAL DESIGN — FOLLOW THE ATTACHED BRANDLENS PDF’S VISUAL LANGUAGE
+The PDF is a dark, editorial pitch deck rather than a finished app mockup. Translate its visual language into a polished application dashboard:
+- Main background: deep ink/navy #0B1020.
+- Elevated cards/panels: #151F35; deeper inset surfaces: #10192C.
+- Teal primary accent #46E3C1; cyan #75D9F5; violet #A78BFA; gold #FFD166; coral #FB7185.
+- Main text #EEF3FF; secondary text #9AABC5; subtle borders #283650.
+- Sans-serif typography similar to Inter. Bold, slightly condensed headline treatment; small uppercase, letter-spaced section kickers; clear hierarchy and generous negative space.
+- Rounded 10–12 px cards, thin borders, restrained glow/shadows, narrow coloured top rules on feature cards, dark backgrounds, accent pills and compact readable status tags. Use colour to communicate category/severity, not as decoration everywhere.
+- App shell: fixed/collapsible left sidebar; top breadcrumb/search area; spacious responsive content area; clear page title and one primary action. On mobile, make the sidebar collapsible and tables/cards responsive.
+- The overall impression must match the attached PDF: technical, calm, premium, evidence-led, dark navy with crisp turquoise/cyan accents and selected violet/gold/coral indicators. Do not switch to a white Material UI theme, generic purple AI gradient, glassmorphism, bright green agricultural palette, or generic admin template. Do not make the UI look like the presentation slides themselves; it should look like a real product using the same design system.
+
+INFORMATION ARCHITECTURE / NAVIGATION
+Create these primary screens in the application:
+1. Overview
+2. Governance Library
+3. Content Review
+4. Approvals
+5. Trends & Learning
+6. Audit History
+7. Workspace Settings
+Show current workspace (“Phoenix Studio” or “Phoenix Coders”) and signed-in user/role. A visible badge should distinguish DEMO/SAMPLE DATA from persistent real records.
+
+SCREEN 1 — OVERVIEW
+- Summary cards for drafts reviewed, open findings, awaiting approval, and source traceability. Real dashboard metrics must be derived from Firestore records. In an empty workspace show zero/empty states; only show example figures inside a clearly labelled sample-data mode.
+- Review queue with draft title, channel, status, risk, owner, last-updated time, and click-through.
+- Issue mix across the plan’s review categories: Tone & Voice, Terminology, Facts & Freshness, Promotional Claims, Visual Consistency, Accessibility.
+- Recent governance activity feed backed by audit events.
+- A brief human-control note: “BrandLens recommends; authorised people approve.”
+
+SCREEN 2 — GOVERNANCE LIBRARY (SOURCE OF TRUTH)
+Provide tabs or filters for:
+- Approved facts: statement, canonical source text/URL, source owner, source date, expiry date, status, version.
+- Preferred/prohibited terminology: term, preferred replacement, explanation, channel/scope, active status.
+- Voice/tone guidance: principle, examples of preferred and disallowed phrasing, applicable channel.
+- Approved assets/guidelines metadata: name, type, approved version, owner, notes. Advanced image-similarity analysis can be marked as later scope; do not fake it.
+- Guideline/source version history.
+Create, edit, archive and view details. Show stale/expiring facts as warnings. Do not treat an expired source as current.
+
+SCREEN 3 — CONTENT REVIEW (THE MAIN DEMO)
+- Start a review by typing/pasting text or uploading supported .txt, .docx, and .pdf files. Validate size/type; parse documents on the server where possible. If parsing fails or a file type is unsupported, show a clear error. Never show “review complete” when extraction failed. Store original text and document/version metadata.
+- Let the user choose channel (website, social, email, paid campaign, product page) and optionally assign an owner/reviewer.
+- Run a preflight consisting of predictable deterministic checks plus optional source-grounded AI checks only when an API key is configured.
+- MVP check focus: prohibited/preferred terminology; absolute/promotional claims such as “best”, “guaranteed”, “100%”, and universal promises; approved-fact/source mismatch or missing proof; stale source dates; basic tone warnings. Include accessibility checks only when measurable; otherwise provide an explicit reviewer note. Visual matching can be a later feature.
+- Render prioritised issue cards. Every finding must show: exact excerpt and location in the draft, category, severity, why it was flagged, the relevant rule, supporting approved evidence (with source identifier and source passage), a suggested revision, confidence/limitations, and actions.
+- Actions: accept suggestion, edit suggestion manually, dismiss with mandatory reason, assign/route to specialist, add comment, request changes, resolve finding. Preserve the original draft and create a new version for accepted edits; show a before/after comparison.
+- Include the illustrative policy example from the PDF in DEMO DATA only: submitted copy “Our platform guarantees delivery in 24 hours for every customer.” Approved source “Standard delivery: 3–5 business days. Expedited delivery only when confirmed for the order.” Suggested revision “Standard delivery takes 3–5 business days. Expedited delivery may be available when confirmed for your order.” Make clear that these company/policy details are examples, not real customer facts.
+- Critical evidence rule: when no source supports a claim, explicitly show “No approved evidence found.” Never invent citations or source IDs. Only cite evidence records actually fetched from the database. Validate all evidence IDs server-side before saving or presenting a supported finding. If the source store has no evidence, label it unsupported/insufficient rather than hallucinating a citation.
+
+SCREEN 4 — APPROVALS / GUIDED APPROVAL LANE
+Implement explicit statuses: Draft → In Review → Changes Requested → Approved → Published/Exported. Store who changed the state, timestamp, content version reviewed, and any override/dismissal reason. “Approved” and “Published/Exported” are separate statuses; BrandLens must not publish automatically.
+Roles and responsibilities:
+- Creator: submit draft, review feedback, edit/resubmit; cannot approve their own high-risk claim by default.
+- Brand Manager: triage issues, confirm tone/terminology, approve normal copy.
+- Specialist Reviewer: verify risky claims and legal/product/compliance-sensitive wording.
+- Publish Owner: confirm final state and export approved version; retains the audit record.
+Add comments, assignments, due dates if feasible, and request-changes flow. Enforce permissions in Firestore rules and server-side logic, not just by hiding UI controls.
+
+SCREEN 5 — TRENDS & LEARNING (GOVERNANCE MEMORY LOOP)
+- Compute recurring issue categories from saved review findings.
+- Show rule conflicts/unclear-guideline candidates as suggestions for a human brand owner, not as automatic guideline edits.
+- Basic trend cards/charts and downloadable review report if feasible.
+- Any demo chart must be labelled “sample data”; production charts must use actual Firestore queries.
+
+SCREEN 6 — AUDIT HISTORY
+- Filter events by draft, actor, action, date and status if feasible.
+- Events include submitted, preflight completed, finding accepted/edited/dismissed, comment added, assignee changed, changes requested, approved, and exported/published.
+- Audit entries must not be silently overwritten by clients. Record actor UID, timestamp, workspace, review ID, reviewed version, action, old/new status when applicable, and required reason. Treat audit history as append-only through trusted server code.
+
+SCREEN 7 — SETTINGS
+- Workspace member list, roles, workspace profile, source/content retention options, external AI processing disclosure, data export/deletion notes and a short security checklist.
+- Do not overbuild an enterprise admin console; focus on the small hackathon team.
+
+FIRESTORE DATA MODEL
+Use a workspace-based schema with server-generated timestamps and stable IDs. A reasonable starting point is:
+- workspaces/{workspaceId}: name, createdBy, createdAt, settings
+- workspaces/{workspaceId}/members/{uid}: role, displayName, status, joinedAt
+- workspaces/{workspaceId}/knowledgeItems/{itemId}: type (fact/glossary/tone/asset/guideline), title, body, preferredTerm, prohibitedTerms, sourceName, sourceUrl, sourceText, ownerUid, validFrom, expiresAt, status, version, createdAt, updatedAt
+- workspaces/{workspaceId}/reviews/{reviewId}: title, channel, status, createdBy, assignedTo, originalText, currentText, fileMetadata, contentVersion, createdAt, updatedAt
+- workspaces/{workspaceId}/reviews/{reviewId}/versions/{versionId}: text, changeSummary, createdBy, createdAt, basedOnVersion
+- workspaces/{workspaceId}/reviews/{reviewId}/findings/{findingId}: category, severity, excerpt, startOffset/endOffset where available, ruleId, rationale, evidenceStatus, evidenceIds, suggestedRevision, confidence, status, assignedTo, createdAt, updatedAt
+- workspaces/{workspaceId}/reviews/{reviewId}/comments/{commentId}: authorUid, body, createdAt, linkedFindingId
+- workspaces/{workspaceId}/auditEvents/{eventId}: actorUid, action, reviewId, versionId, oldStatus, newStatus, reason, metadata, createdAt
+- workspaces/{workspaceId}/testCases/{testCaseId}: label, category, inputText, expectedOutcome, expectedEvidenceState, notes
+Adapt if needed, but explain the final schema and ensure queries/indexes match it. Never put all tenants’ records in an unrestricted public collection.
+
+SECURITY REQUIREMENTS
+- Create and explain Firestore rules. Default deny. Require authenticated membership in the relevant workspace for reads. Scope creator/reviewer/manager/specialist/publisher access by role. Users must not read or write other workspaces’ records.
+- Sensitive transitions and audit writes must be processed server-side after verifying Firebase ID token + workspace membership/role. Clients must not create or modify audit events directly.
+- Validate allowed fields, status transitions, value types and document sizes. Protect against users changing their own role. Avoid untrusted client-supplied owner IDs.
+- Do not use `allow read, write: if true`. Do not expose service-account private keys or AI keys in the browser.
+- If the generated platform cannot safely enforce a rule, explain the limitation and leave it denied rather than opening the database.
+
+AI / CHECK ENGINE REQUIREMENTS
+- Deterministic glossary/claim checks should work without an AI key and must be testable.
+- For source-grounded AI: retrieve a small set of relevant approved fact/rule passages first; send only those passages and stable IDs to the model; require structured JSON that references only provided IDs; validate IDs and excerpt offsets server-side. A claim is “supported” only if valid retrieved evidence directly supports it. If unsure, return “insufficient approved evidence”.
+- Never let the model publish content, change permissions, silently edit the original draft, or fabricate a source. Suggestions require a human action.
+- Show “Rules-only mode” or “AI checks enabled” accurately. If the AI provider fails, display the failure and preserve the draft; do not quietly mark the draft as passed.
+
+ROUND 2 ACCEPTANCE TESTS
+1. A user can sign in and enter their workspace.
+2. The user can create/edit one approved fact and one preferred/prohibited terminology rule; records persist after refresh.
+3. The user can paste a draft and upload supported DOCX/PDF files or receive a clear unsupported/parse-error message.
+4. Running preflight creates stored findings and links to real saved rules/evidence. Unsupported claims show “No approved evidence found”; no fabricated sources.
+5. Accepting/editing a suggestion preserves original text, creates a new version and records an audit event.
+6. Dismissing a finding requires a reason and records actor + timestamp + version + reason.
+7. Creator, Brand Manager, Specialist Reviewer and Publish Owner actions are role-gated and server-validated.
+8. A reviewer can request changes or approve; final publication never happens automatically.
+9. Trends/overview values are derived from persisted data or clearly labelled sample data.
+10. Security rules are published and tested with at least one permitted and one forbidden access case.
+11. Provide a small labelled test set containing clean text, terminology violation, stale fact, unsupported claim, tone mismatch and accessible-link/alt-text example. Record expected outcomes and limitations.
+12. Provide a working preview/deployment, setup instructions, environment-variable list, Firestore rules, data schema and a brief judge demo script.
+
+BUILD ORDER
+1. First generate the styled app shell and Overview, Governance Library and Content Review screens with the supplied visual design.
+2. Next wire Firebase Authentication, Firestore persistence, workspace membership and security rules.
+3. Next implement deterministic preflight + evidence-linked findings + versioned suggestions.
+4. Next implement comments, role-aware approvals, audit history and the basic trends view.
+5. Finally test all acceptance cases and provide a concise list of what is actually working vs. what remains a limitation.
+
+Do not stop after a blueprint, static mockup or architecture description. Implement the code and Firebase connection. Before claiming success, run the app, test one draft end-to-end, refresh to confirm data persistence, test role restrictions and show any setup steps I must complete in the Firebase Console. Keep the UI consistent with the attached reference and do not simplify away evidence traceability or human approval.
