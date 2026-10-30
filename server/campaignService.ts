@@ -932,12 +932,23 @@ export class CampaignService {
       now: this.now(),
     });
 
+    // Approvals recorded before a release manifest exists, so judge the content gates only.
+    const remainingGates = postReadiness.blockers.filter(
+      (b) =>
+        ![
+          'incomplete_approvals',
+          'approval_stale',
+          'manifest_missing',
+          'manifest_stale',
+        ].includes(b.code)
+    );
+    const approved =
+      satisfiedRoles.length === REQUIRED_APPROVAL_ROLES.length && remainingGates.length === 0;
+
     const updated: Campaign = {
       ...campaign,
       approvals,
-      status: satisfiedRoles.length === REQUIRED_APPROVAL_ROLES.length && postReadiness.ready === true
-        ? 'approved'
-        : 'in_review',
+      status: approved ? 'approved' : 'in_review',
       updatedAt: this.now().toISOString(),
     };
     await this.store.saveCampaign(updated);
@@ -969,12 +980,16 @@ export class CampaignService {
       manifestState: manifest.state,
       now: this.now(),
     });
-    if (!readiness.ready) {
+    // The manifest is what this call CREATES, so its own absence/staleness cannot block it.
+    const blocking = readiness.blockers.filter(
+      (b) => !['manifest_missing', 'manifest_stale'].includes(b.code)
+    );
+    if (blocking.length > 0) {
       throw new ApiError(
         'Release is blocked until every compliance gate passes.',
         409,
         'readiness_blocked',
-        readiness.blockers.map((b) => `${b.code}: ${b.message}`)
+        blocking.map((b) => `${b.code}: ${b.message}`)
       );
     }
 
