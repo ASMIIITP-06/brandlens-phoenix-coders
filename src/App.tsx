@@ -521,6 +521,8 @@ export default function App() {
               ? 'Governance Library'
               : currentScreen === 'review'
               ? 'Content Preflight & Review'
+              : currentScreen === 'campaigns'
+              ? 'Campaign Compliance Studio'
               : currentScreen === 'approvals'
               ? 'Approvals Lane'
               : currentScreen === 'trends'
