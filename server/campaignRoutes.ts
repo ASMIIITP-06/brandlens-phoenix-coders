@@ -87,8 +87,8 @@ export function createCampaignRouter(deps: CampaignRouterDeps): Router {
       req.campaignAuth = { user, idToken, workspaceId: urlWorkspaceId };
       res.setHeader('Cache-Control', 'no-store');
       next();
-    })
-  );
+    })().catch(next);
+  });
 
   /** Resolves the actor context, reading the authoritative role from Firestore. */
   const actorOf = async (req: AuthedRequest): Promise<ActorContext> => {
