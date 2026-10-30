@@ -1,11 +1,17 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import dotenv from 'dotenv';
+import fs from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 import mammoth from 'mammoth';
 import { runDeterministicPreflight } from './src/services/engine';
 import { Finding, KnowledgeItem } from './src/types/brandlens';
+import { createFirebaseTokenVerifier } from './server/auth';
+import { FirestoreRestStore } from './server/firestoreStore';
+import { CampaignStore } from './server/campaignStore';
+import { campaignErrorHandler, createCampaignRouter } from './server/campaignRoutes';
+import { createGeminiAssetReviewer } from './server/geminiReviewer';
 
 dotenv.config();
 
@@ -13,8 +19,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+// Cloud Run injects PORT; 3000 stays the local default.
+const PORT = Number(process.env.PORT || 3000);
 
+app.disable('x-powered-by');
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 app.use(express.json({ limit: '25mb' }));
 
 const geminiApiKey = process.env.GEMINI_API_KEY || '';
@@ -27,6 +41,56 @@ if (geminiApiKey) {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Campaign Compliance Studio API
+ * ------------------------------------------------------------------ */
+interface FirebaseWebConfig {
+  projectId?: string;
+  firestoreDatabaseId?: string;
+}
+
+function loadFirebaseWebConfig(): FirebaseWebConfig {
+  try {
+    const raw = fs.readFileSync(path.resolve(__dirname, 'firebase-applet-config.json'), 'utf8');
+    return JSON.parse(raw) as FirebaseWebConfig;
+  } catch {
+    return {};
+  }
+}
+
+const firebaseWebConfig = loadFirebaseWebConfig();
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || firebaseWebConfig.projectId || '';
+const firestoreDatabaseId =
+  process.env.FIRESTORE_DATABASE_ID || firebaseWebConfig.firestoreDatabaseId || '(default)';
+
+let campaignAiReviewer = null as ReturnType<typeof createGeminiAssetReviewer> | null;
+if (geminiApiKey) {
+  try {
+    campaignAiReviewer = createGeminiAssetReviewer(geminiApiKey);
+  } catch (err) {
+    console.warn('Campaign AI reviewer unavailable, deterministic rules only:', err);
+  }
+}
+
+if (firebaseProjectId) {
+  const verifier = createFirebaseTokenVerifier(firebaseProjectId);
+  const createStore = (params: { workspaceId: string; idToken: string }): CampaignStore =>
+    new FirestoreRestStore(
+      { projectId: firebaseProjectId, databaseId: firestoreDatabaseId },
+      params.idToken
+    );
+
+  app.use(
+    '/api/workspaces/:workspaceId/campaigns',
+    createCampaignRouter({ verifier, createStore, aiReviewer: campaignAiReviewer })
+  );
+  app.use('/api/workspaces/:workspaceId/campaigns', campaignErrorHandler);
+} else {
+  console.warn(
+    'Campaign Compliance Studio API disabled: firebase project id not configured (FIREBASE_PROJECT_ID).'
+  );
+}
+
 // 1. Engine status endpoint
 app.get('/api/engine-status', (_req: Request, res: Response) => {
   res.json({
@@ -34,6 +98,7 @@ app.get('/api/engine-status', (_req: Request, res: Response) => {
     aiEnabled: Boolean(geminiApiKey && aiClient),
     model: geminiApiKey ? 'gemini-3.8-flash' : 'none (deterministic rules active)',
     engineMode: geminiApiKey ? 'Source-grounded AI + Rules enabled' : 'Rules-only mode',
+    campaignStudio: Boolean(firebaseProjectId),
     supportedFileTypes: ['.txt', '.docx'],
     version: '2.0.0-mvp'
   });
