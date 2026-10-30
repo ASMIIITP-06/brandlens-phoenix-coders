@@ -38,6 +38,7 @@ import { Header } from './components/Header';
 import { OverviewView } from './components/OverviewView';
 import { GovernanceLibraryView } from './components/GovernanceLibraryView';
 import { ContentReviewView } from './components/ContentReviewView';
+import { CampaignStudioView } from './components/CampaignStudioView';
 import { ApprovalsView } from './components/ApprovalsView';
 import { TrendsLearningView } from './components/TrendsLearningView';
 import { AuditHistoryView } from './components/AuditHistoryView';
