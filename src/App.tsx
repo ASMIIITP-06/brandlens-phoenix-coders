@@ -538,6 +538,8 @@ export default function App() {
               ? '02 / SOURCE OF TRUTH'
               : currentScreen === 'review'
               ? '03 / PREFLIGHT ENGINE'
+              : currentScreen === 'campaigns'
+              ? '03b / MULTI-CHANNEL GOVERNANCE'
               : currentScreen === 'approvals'
               ? '04 / HUMAN RELEASE GATE'
               : currentScreen === 'trends'
