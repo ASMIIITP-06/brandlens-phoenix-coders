@@ -89,17 +89,6 @@ export function createCampaignRouter(deps: CampaignRouterDeps): Router {
     })
   );
 
-  const ctxOf = (req: AuthedRequest): ActorContext => {
-    const auth = req.campaignAuth!;
-    return {
-      uid: auth.user.uid,
-      displayName: auth.user.displayName || auth.user.email || auth.user.uid,
-      workspaceId: auth.workspaceId,
-      role: 'creator', // overwritten below from the server-resolved membership
-      ...{},
-    } as ActorContext;
-  };
-
   /** Resolves the actor context, reading the authoritative role from Firestore. */
   const actorOf = async (req: AuthedRequest): Promise<ActorContext> => {
     const auth = req.campaignAuth!;
