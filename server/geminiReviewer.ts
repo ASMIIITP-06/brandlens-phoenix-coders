@@ -1,7 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { AiAssetReviewer } from './campaignService';
-import { ResolvedEvidence } from '../src/services/campaignEngine';
-import { CampaignChannel } from '../src/types/campaign';
+import { CampaignChannel, ResolvedEvidence } from '../src/types/campaign';
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
