@@ -60,8 +60,9 @@ export function createCampaignRouter(deps: CampaignRouterDeps): Router {
   };
 
   // 1. Authentication + workspace membership resolution (server-side role).
-  router.use(
-    asyncHandler(async (req, res) => {
+  router.use((rawReq: Request, res: Response, next: NextFunction) => {
+    const req = rawReq as AuthedRequest;
+    void (async () => {
       const urlWorkspaceId = assertDocumentId(req.params.workspaceId, 'workspaceId');
       const idToken = readBearerToken(req.headers.authorization);
       const user = await deps.verifier.verify(idToken);
