@@ -9,6 +9,7 @@ import {
   Settings,
   Shield,
   Layers,
+  Megaphone,
   Sparkles,
   Database,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ export type ScreenId =
   | 'overview'
   | 'library'
   | 'review'
+  | 'campaigns'
   | 'approvals'
   | 'trends'
   | 'audit'
