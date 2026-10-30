@@ -77,7 +77,7 @@ export interface FirestoreConfig {
 export class FirestoreRestStore implements CampaignStore {
   constructor(
     private config: FirestoreConfig,
-    private tokenProvider: (idToken: string) => string
+    private idToken: string
   ) {}
 
   private base(): string {
@@ -91,7 +91,7 @@ export class FirestoreRestStore implements CampaignStore {
       ...init,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.tokenProvider(idToken)}`,
+        Authorization: `Bearer ${idToken}`,
         ...(init.headers || {}),
       },
     });
@@ -161,7 +161,7 @@ export class FirestoreRestStore implements CampaignStore {
   }
 
   async getMembership(workspaceId: string, uid: string): Promise<WorkspaceMembership | null> {
-    const doc = await this.getDoc(`/workspaces/${workspaceId}/members/${uid}`, this.currentToken());
+    const doc = await this.getDoc(`/workspaces/${workspaceId}/members/${uid}`, this.idToken);
     if (!doc) return null;
     return {
       uid,
@@ -171,30 +171,20 @@ export class FirestoreRestStore implements CampaignStore {
     };
   }
 
-  private tokenRef = '';
-  /** Set per request by the router before invoking store methods. */
-  private currentToken(): string {
-    return this.tokenRef;
-  }
-  withToken(idToken: string): this {
-    this.tokenRef = idToken;
-    return this;
-  }
-
   async listCampaigns(workspaceId: string): Promise<Campaign[]> {
-    const docs = await this.listCollection(`/workspaces/${workspaceId}/campaigns`, this.currentToken());
+    const docs = await this.listCollection(`/workspaces/${workspaceId}/campaigns`, this.idToken);
     return docs.map((doc) => this.toCampaign(doc)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
   async getCampaign(workspaceId: string, campaignId: string): Promise<Campaign | null> {
     const docs = await this.listCollection(
       `/workspaces/${workspaceId}/campaigns/${campaignId}`,
-      this.currentToken(),
+      this.idToken,
       1
     );
     const doc = docs.find((d) => d.id === campaignId) || null;
     if (doc) return this.toCampaign(doc);
-    const single = await this.getDoc(`/workspaces/${workspaceId}/campaigns/${campaignId}`, this.currentToken());
+    const single = await this.getDoc(`/workspaces/${workspaceId}/campaigns/${campaignId}`, this.idToken);
     return single ? this.toCampaign(single) : null;
   }
 
@@ -206,18 +196,18 @@ export class FirestoreRestStore implements CampaignStore {
     await this.patchDoc(
       `/workspaces/${campaign.workspaceId}/campaigns/${campaign.id}`,
       campaign as unknown as Record<string, unknown>,
-      this.currentToken()
+      this.idToken
     );
   }
 
   async deleteCampaign(workspaceId: string, campaignId: string): Promise<void> {
-    await this.deleteDoc(`/workspaces/${workspaceId}/campaigns/${campaignId}`, this.currentToken());
+    await this.deleteDoc(`/workspaces/${workspaceId}/campaigns/${campaignId}`, this.idToken);
   }
 
   async listAssets(workspaceId: string, campaignId: string): Promise<CampaignAsset[]> {
     const docs = await this.listCollection(
       `/workspaces/${workspaceId}/campaigns/${campaignId}/assets`,
-      this.currentToken()
+      this.idToken
     );
     return docs
       .map((doc) => doc as unknown as CampaignAsset)
@@ -228,7 +218,7 @@ export class FirestoreRestStore implements CampaignStore {
   async getAsset(workspaceId: string, campaignId: string, assetId: string): Promise<CampaignAsset | null> {
     const doc = await this.getDoc(
       `/workspaces/${workspaceId}/campaigns/${campaignId}/assets/${assetId}`,
-      this.currentToken()
+      this.idToken
     );
     return doc ? (doc as unknown as CampaignAsset) : null;
   }
@@ -237,19 +227,19 @@ export class FirestoreRestStore implements CampaignStore {
     await this.patchDoc(
       `/workspaces/${asset.workspaceId}/campaigns/${asset.campaignId}/assets/${asset.id}`,
       asset as unknown as Record<string, unknown>,
-      this.currentToken()
+      this.idToken
     );
   }
 
   async deleteAsset(workspaceId: string, campaignId: string, assetId: string): Promise<void> {
     await this.deleteDoc(
       `/workspaces/${workspaceId}/campaigns/${campaignId}/assets/${assetId}`,
-      this.currentToken()
+      this.idToken
     );
   }
 
   async listEvidence(workspaceId: string): Promise<KnowledgeItem[]> {
-    const docs = await this.listCollection(`/workspaces/${workspaceId}/knowledgeItems`, this.currentToken());
+    const docs = await this.listCollection(`/workspaces/${workspaceId}/knowledgeItems`, this.idToken);
     return docs as unknown as KnowledgeItem[];
   }
 
@@ -260,14 +250,14 @@ export class FirestoreRestStore implements CampaignStore {
       `/workspaces/${event.workspaceId}/campaigns/${event.campaignId}/auditEvents`,
       event.id,
       event as unknown as Record<string, unknown>,
-      this.currentToken()
+      this.idToken
     );
   }
 
   async listAuditEvents(workspaceId: string, campaignId: string): Promise<CampaignAuditEvent[]> {
     const docs = await this.listCollection(
       `/workspaces/${workspaceId}/campaigns/${campaignId}/auditEvents`,
-      this.currentToken()
+      this.idToken
     );
     return (docs as unknown as CampaignAuditEvent[]).sort((a, b) =>
       String(b.createdAt).localeCompare(String(a.createdAt))
