@@ -606,6 +606,15 @@ export default function App() {
             />
           )}
 
+          {currentScreen === 'campaigns' && (
+            <CampaignStudioView
+              workspaceId={workspaceId}
+              userRole={userRole}
+              userEmail={currentUser?.email || undefined}
+              onToast={showToast}
+            />
+          )}
+
           {currentScreen === 'approvals' && (
             <ApprovalsView
               reviews={reviews}
