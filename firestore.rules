@@ -12,7 +12,10 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // Helper functions
+    /* ------------------------------------------------------------------ *
+     * Helpers — workspace membership is the single source of authority.
+     * Roles are read from Firestore, never from client-supplied payloads.
+     * ------------------------------------------------------------------ */
     function isSignedIn() {
       return request.auth != null;
     }
@@ -21,85 +24,160 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function memberPath(workspaceId) {
+      return /databases/$(database)/documents/workspaces/$(workspaceId)/members/$(request.auth.uid);
+    }
+
+    function isMember(workspaceId) {
+      return isSignedIn()
+        && exists(memberPath(workspaceId))
+        && get(memberPath(workspaceId)).data.status == 'active';
+    }
+
+    function roleOf(workspaceId) {
+      return get(memberPath(workspaceId)).data.role;
+    }
+
+    function hasRole(workspaceId, roles) {
+      return isMember(workspaceId) && roleOf(workspaceId) in roles;
+    }
+
     // Workspace scoping
     match /workspaces/{workspaceId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(workspaceId) &&
+      allow get, list: if isMember(workspaceId);
+      allow create: if isSignedIn() &&
+        isValidId(workspaceId) &&
         request.resource.data.name is string &&
-        request.resource.data.name.size() <= 100;
-      allow update: if isSignedIn();
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.createdBy == request.auth.uid;
+      // Owner may finish bootstrapping; otherwise brand managers/admins only.
+      allow update: if (isSignedIn() && resource.data.createdBy == request.auth.uid)
+        || hasRole(workspaceId, ['brand_manager', 'admin']);
       allow delete: if false;
 
-      // Workspace members
+      // Workspace members — roles can only be changed by workspace admins.
       match /members/{memberId} {
-        allow read: if isSignedIn();
-        allow create, update: if isSignedIn() && (
-          memberId == request.auth.uid ||
-          request.resource.data.uid == request.auth.uid
-        );
-        allow delete: if isSignedIn();
+        allow read: if isMember(workspaceId) || memberId == request.auth.uid;
+
+        // Bootstrap: the workspace creator may add themselves exactly once,
+        // and may never grant themselves the admin role this way.
+        allow create: if isSignedIn() &&
+          isValidId(memberId) &&
+          request.resource.data.uid == request.auth.uid &&
+          request.resource.data.role in ['creator', 'brand_manager', 'specialist_reviewer', 'publish_owner'] &&
+          memberId == request.auth.uid &&
+          !exists(memberPath(workspaceId)) &&
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          || hasRole(workspaceId, ['brand_manager', 'admin']) &&
+          request.resource.data.role in ['creator', 'brand_manager', 'specialist_reviewer', 'publish_owner'];
+
+        // A member may edit only their own profile fields; role and status are
+        // admin-only, so self-promotion is impossible.
+        allow update: if (memberId == request.auth.uid &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'email', 'joinedAt']))
+          || hasRole(workspaceId, ['admin']);
+        allow delete: if hasRole(workspaceId, ['admin']) && memberId != request.auth.uid;
       }
 
       // Governance Library: Approved Facts, Terminology, Voice Guidance
       match /knowledgeItems/{itemId} {
-        allow read: if isSignedIn();
-        allow create, update: if isSignedIn() &&
+        allow read: if isMember(workspaceId);
+        allow create, update: if hasRole(workspaceId, ['brand_manager', 'admin']) &&
           isValidId(itemId) &&
           request.resource.data.title is string &&
           request.resource.data.title.size() <= 200 &&
           request.resource.data.type in ['fact', 'glossary', 'tone', 'guideline', 'asset'];
-        allow delete: if isSignedIn();
+        allow delete: if hasRole(workspaceId, ['brand_manager', 'admin']);
       }
 
       // Content Reviews & Submissions
       match /reviews/{reviewId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() &&
+        allow get, list: if isMember(workspaceId);
+        allow create: if hasRole(workspaceId, ['creator', 'brand_manager', 'admin']) &&
           isValidId(reviewId) &&
           request.resource.data.title is string &&
           request.resource.data.title.size() <= 200;
-        allow update: if isSignedIn();
-        allow delete: if isSignedIn();
+        allow update: if isMember(workspaceId);
+        allow delete: if hasRole(workspaceId, ['brand_manager', 'admin']);
 
         // Evidence-linked Findings
         match /findings/{findingId} {
-          allow read: if isSignedIn();
-          allow create: if isSignedIn() && isValidId(findingId);
-          allow update: if isSignedIn() && (
+          allow read: if isMember(workspaceId);
+          allow create: if isMember(workspaceId) && isValidId(findingId);
+          allow update: if isMember(workspaceId) && (
             // Mandatory non-empty reason when dismissing a finding
             (request.resource.data.status != 'dismissed') ||
             (request.resource.data.status == 'dismissed' &&
              request.resource.data.dismissReason is string &&
              request.resource.data.dismissReason.size() > 0)
           );
-          allow delete: if isSignedIn();
+          allow delete: if hasRole(workspaceId, ['brand_manager', 'admin']);
         }
 
         // Immutable Version Snapshots
         match /versions/{versionId} {
-          allow read: if isSignedIn();
-          allow create: if isSignedIn() && isValidId(versionId);
+          allow read: if isMember(workspaceId);
+          allow create: if isMember(workspaceId) && isValidId(versionId);
           allow update, delete: if false; // Versions are strictly immutable
         }
 
         // Review Comments & Annotations
         match /comments/{commentId} {
-          allow read: if isSignedIn();
-          allow create: if isSignedIn() &&
+          allow read: if isMember(workspaceId);
+          allow create: if isMember(workspaceId) &&
             request.resource.data.body is string &&
             request.resource.data.body.size() <= 2000;
-          allow update, delete: if isSignedIn();
+          allow update, delete: if isMember(workspaceId);
         }
       }
 
       // Append-Only Immutable Audit Trail
       match /auditEvents/{eventId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() &&
+        allow read: if isMember(workspaceId);
+        allow create: if isMember(workspaceId) &&
           isValidId(eventId) &&
           request.resource.data.action is string &&
           request.resource.data.action.size() <= 120;
         allow update, delete: if false; // Strict audit immutability
+      }
+
+      /* ---------------------------------------------------------------- *
+       * Campaign Compliance Studio
+       * Path: workspaces/{workspaceId}/campaigns/{campaignId}/assets/{assetId}
+       * ---------------------------------------------------------------- */
+      match /campaigns/{campaignId} {
+        allow get, list: if isMember(workspaceId);
+
+        allow create: if hasRole(workspaceId, ['creator', 'brand_manager', 'admin']) &&
+          isValidId(campaignId) &&
+          request.resource.data.workspaceId == workspaceId &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.status in ['draft', 'in_review', 'approved', 'released', 'archived'];
+
+        // Any member may write only through the API, which re-checks the role;
+        // this rule keeps the workspace boundary intact.
+        allow update: if hasRole(workspaceId, ['creator', 'brand_manager', 'admin', 'specialist_reviewer', 'publish_owner']) &&
+          request.resource.data.workspaceId == workspaceId;
+        allow delete: if hasRole(workspaceId, ['admin']);
+
+        match /assets/{assetId} {
+          allow get, list: if isMember(workspaceId);
+          allow create, update: if hasRole(workspaceId, ['creator', 'brand_manager', 'admin', 'specialist_reviewer', 'publish_owner']) &&
+            isValidId(assetId) &&
+            request.resource.data.workspaceId == workspaceId &&
+            request.resource.data.campaignId == campaignId;
+          allow delete: if hasRole(workspaceId, ['brand_manager', 'admin']);
+        }
+
+        // Campaign audit trail is append-only and immutable.
+        match /auditEvents/{eventId} {
+          allow read: if isMember(workspaceId);
+          allow create: if isMember(workspaceId) &&
+            isValidId(eventId) &&
+            request.resource.data.workspaceId == workspaceId &&
+            request.resource.data.campaignId == campaignId;
+          allow update, delete: if false;
+        }
       }
     }
   }
