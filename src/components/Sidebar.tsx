@@ -52,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, kicker: '01' },
     { id: 'library', label: 'Governance Library', icon: BookOpen, kicker: '02' },
     { id: 'review', label: 'Content Review', icon: FileCheck2, kicker: '03', isCore: true },
+    { id: 'campaigns', label: 'Campaign Studio', icon: Megaphone, kicker: '03b' },
     { id: 'approvals', label: 'Approvals Lane', icon: CheckCircle2, kicker: '04' },
     { id: 'trends', label: 'Trends & Memory', icon: TrendingUp, kicker: '05' },
     { id: 'audit', label: 'Audit History', icon: History, kicker: '06' },
